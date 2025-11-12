@@ -32,7 +32,7 @@ public class ArticleController implements ArticleApiSpecification {
 	@PostMapping
 	public ApiResponse<ArticleResponseDto> createArticle(
 			@RequestParam Long userId,
-			CreateArticleRequestDto request) {
+			@RequestBody CreateArticleRequestDto request) {
 		return ApiResponse.onCreateSuccess(SuccessCode.CREATE_SUCCESS, articleCommandService.createArticle(userId, request));
 	}
 	

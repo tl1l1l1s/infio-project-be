@@ -13,6 +13,11 @@ public record ArticleResponseDto(
 		Long articleId,
 		
 		String title,
+		String content,
+		
+		@JsonProperty("article_image")
+		String articleImage,
+		
 		int likeCount,
 		int commentCount,
 		int viewCount,
@@ -21,12 +26,21 @@ public record ArticleResponseDto(
 ) {
 	public static ArticleResponseDto fromEntity(
 			Article article, User user) {
-		return new ArticleResponseDto(article.getId(), article.getTitle(), article.getLikeCount(), article.getCommentCount(), article.getViewCount(), article.getCreatedAt(),
+		return new ArticleResponseDto(article.getId(),
+				article.getTitle(),
+				article.getContent(),
+				article.getArticleImage(),
+				article.getLikeCount(), article.getCommentCount(), article.getViewCount(),
+				article.getCreatedAt(),
 				WrittenByResponseDto.fromEntity(user));
 	}
 	
 	public static ArticleResponseDto fromEntity(Article article) {
-		return new ArticleResponseDto(article.getId(), article.getTitle(), article.getLikeCount(), article.getCommentCount(), article.getViewCount(), article.getCreatedAt(),
+		return new ArticleResponseDto(article.getId(),
+				article.getTitle(),
+				article.getContent(),
+				article.getArticleImage(),
+				article.getLikeCount(), article.getCommentCount(), article.getViewCount(), article.getCreatedAt(),
 				WrittenByResponseDto.emptyWrittenByDto());
 	}
 }
