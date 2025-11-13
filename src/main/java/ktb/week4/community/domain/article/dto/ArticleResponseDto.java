@@ -30,7 +30,9 @@ public record ArticleResponseDto(
 				article.getTitle(),
 				article.getContent(),
 				article.getArticleImage(),
-				article.getLikeCount(), article.getCommentCount(), article.getViewCount(),
+				article.getLikeCount(),
+				article.getCommentCount(),
+				article.getViewCount(),
 				article.getCreatedAt(),
 				WrittenByResponseDto.fromEntity(user));
 	}
@@ -40,7 +42,10 @@ public record ArticleResponseDto(
 				article.getTitle(),
 				article.getContent(),
 				article.getArticleImage(),
-				article.getLikeCount(), article.getCommentCount(), article.getViewCount(), article.getCreatedAt(),
+				article.getLikeCount(),
+				article.getCommentCount(),
+				article.getViewCount(),
+				article.getCreatedAt(),
 				WrittenByResponseDto.emptyWrittenByDto());
 	}
 }

@@ -13,6 +13,11 @@ public class ArticleLoader {
 	private final ArticleRepository articleRepository;
 	
 	public Article getArticleById(Long articleId) {
-		return articleRepository.findById(articleId).orElseThrow(() -> new GeneralException(ErrorCode.ARTICLE_NOT_FOUND));
+		Article article = articleRepository.findById(articleId).orElseThrow(() -> new GeneralException(ErrorCode.ARTICLE_NOT_FOUND));
+		
+		if(article.getDeletedAt() != null) {
+			throw new GeneralException((ErrorCode.ARTICLE_NOT_FOUND));
+		}
+		return article;
 	}
 }

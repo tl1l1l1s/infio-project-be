@@ -22,7 +22,7 @@ import java.util.stream.Collectors;
 public class ArticleQueryService {
     private final ArticleRepository articleRepository;
 	private final ArticleLoader articleLoader;
-
+	
     public GetArticlesResponseDto getArticles(int page, int size) {
         Page<Article> articles = articleRepository.findAllByDeletedAtIsNullOrderByCreatedAt(PageRequest.of(page-1, size));
 		
@@ -42,7 +42,8 @@ public class ArticleQueryService {
 				articles.getTotalPages(),
 				articles.hasNext());
     }
-
+	
+	@Transactional
     public ArticleResponseDto getArticle(Long articleId) {
         Article article = articleLoader.getArticleById(articleId);
 		
