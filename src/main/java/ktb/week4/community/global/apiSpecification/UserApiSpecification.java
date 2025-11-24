@@ -37,15 +37,4 @@ public interface UserApiSpecification {
 	})
 	ResponseEntity<Void> deleteUser(
 			@Parameter(description = "탈퇴 처리를 진행할 사용자의 id", required = true, example = "1") Long userId);
-	
-	@Operation(summary = "로그인합니다.")
-	ApiResponse<LoginResponseDto> login(@Valid LoginRequestDto loginRequestDto);
-	
-	@Operation(summary = "로그아웃합니다.")
-	@ApiResponses({
-			@io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "204", description = "로그아웃 성공"),
-	})
-	
-	ResponseEntity<Void> logout(
-			@Parameter(description = "로그아웃 할 사용자의 id", required = true, example = "1") Long userId);
 }

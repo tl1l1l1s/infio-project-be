@@ -7,6 +7,7 @@ import ktb.week4.community.global.apiPayload.SuccessCode;
 import ktb.week4.community.security.CustomUserDetails;
 import ktb.week4.community.security.JwtTokenProvider;
 import ktb.week4.community.security.filter.JsonAuthenticationFilter;
+import ktb.week4.community.security.filter.JwtFilter;
 import lombok.RequiredArgsConstructor;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -19,6 +20,7 @@ import org.springframework.security.config.annotation.web.configurers.AbstractHt
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.web.SecurityFilterChain;
+import org.springframework.security.web.access.intercept.AuthorizationFilter;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
 
 @Configuration
@@ -36,15 +38,16 @@ public class SecurityConfig {
 				.csrf(AbstractHttpConfigurer::disable)
 				.httpBasic(AbstractHttpConfigurer::disable)
 				// 임시 처리
-				
 				.formLogin(AbstractHttpConfigurer::disable)
 				.authorizeHttpRequests(auth -> auth
 						.requestMatchers("/v3/api-docs/**", "/swagger-ui/**", "/swagger-resources/**").permitAll()
 						.requestMatchers(HttpMethod.POST, "/auth/login/**",  "/users/**").anonymous()
+						.requestMatchers(HttpMethod.POST, "/auth/refresh").permitAll()
 						.requestMatchers(HttpMethod.GET, "/articles/**").permitAll()
 						.anyRequest().authenticated()
 				)
-				.addFilterAt(jsonAuthenticationFilter(), UsernamePasswordAuthenticationFilter.class);
+				.addFilterAt(jsonAuthenticationFilter(), UsernamePasswordAuthenticationFilter.class)
+				.addFilterAt(new JwtFilter(objectMapper, jwtTokenProvider), AuthorizationFilter.class);
 		
 		return http.build();
 	}
@@ -52,10 +55,8 @@ public class SecurityConfig {
 	private JsonAuthenticationFilter jsonAuthenticationFilter() throws Exception {
 		JsonAuthenticationFilter filter = new JsonAuthenticationFilter(objectMapper);
 		
-		// AuthenticationManager
 		filter.setAuthenticationManager(authenticationConfiguration.getAuthenticationManager());
 		
-		// SuccessHandler
 		filter.setAuthenticationSuccessHandler((request, response, authentication) -> {
 			response.setStatus(200);
 			response.setContentType("application/json;charset=UTF-8");
@@ -65,13 +66,15 @@ public class SecurityConfig {
 					.path("/")
 					.maxAge(60 * 60)
 					.httpOnly(true)
+					.sameSite("Strict")
 					.build();
 			response.addHeader(HttpHeaders.SET_COOKIE, accessToken.toString());
 			
-			ResponseCookie refreshToken = ResponseCookie.from("refreshToken", jwtTokenProvider.createToken(authentication, 7 * 24 * 60))
+			ResponseCookie refreshToken = ResponseCookie.from("refreshToken", jwtTokenProvider.createToken(authentication, 3 * 24 * 60))
 					.path("/auth/")
 					.maxAge(7 * 24 * 60 * 60)
 					.httpOnly(true)
+					.sameSite("Strict")
 					.build();
 			response.addHeader(HttpHeaders.SET_COOKIE, refreshToken.toString());
 			
@@ -82,7 +85,6 @@ public class SecurityConfig {
 			);
 		});
 		
-		// FailureHandler
 		filter.setAuthenticationFailureHandler((request,  response, exception) -> {
 			response.setStatus(401);
 			response.setContentType("application/json;charset=UTF-8");

@@ -1,7 +1,6 @@
 package ktb.week4.community.security;
 
-import io.jsonwebtoken.Claims;
-import io.jsonwebtoken.Jwts;
+import io.jsonwebtoken.*;
 import io.jsonwebtoken.io.Decoders;
 import io.jsonwebtoken.security.Keys;
 import org.springframework.beans.factory.annotation.Value;
@@ -13,6 +12,7 @@ import org.springframework.stereotype.Component;
 import javax.crypto.SecretKey;
 import java.util.Arrays;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.Date;
 import java.util.stream.Collectors;
 
@@ -44,17 +44,32 @@ public class JwtTokenProvider {
 				.compact();
 	}
 	
+	public void validateToken(String token) throws ExpiredJwtException, MalformedJwtException, UnsupportedJwtException  {
+		Jwts.parser()
+				.verifyWith(getSecretKey())
+				.build()
+				.parseSignedClaims(token);
+	}
+	
 	public Authentication resolveToken(String token) {
 		Claims claims = Jwts.parser()
-				.decryptWith(getSecretKey())
+				.verifyWith(getSecretKey())
 				.build()
-				.parseUnsecuredClaims(token)
+				.parseSignedClaims(token)
 				.getPayload();
 		
-		Collection<? extends GrantedAuthority> authorities = Arrays.stream(claims.get("authorities").toString().split(","))
-				.map(SimpleGrantedAuthority::new)
-				.toList();
-		Long id =  Long.parseLong(claims.get("userId").toString());
+		String authoritiesString = claims.get("authorities", String.class);
+		
+		Collection<? extends GrantedAuthority> authorities;
+		
+		if (authoritiesString == null || authoritiesString.isEmpty()) {
+			authorities = Collections.emptyList();
+		} else {
+			authorities = Arrays.stream(authoritiesString.split(","))
+					.map(SimpleGrantedAuthority::new)
+					.toList();
+		}
+		Long id =  claims.get("userId", Long.class);
 		String userName = claims.get("userName").toString();
 		String userProfileImage = claims.get("profileImage").toString();
 		CustomUserDetails principal = new CustomUserDetails(

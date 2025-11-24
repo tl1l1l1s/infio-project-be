@@ -13,6 +13,7 @@ public enum ErrorCode implements BaseErrorCode {
 	_INTERNAL_SERVER_ERROR(HttpStatus.INTERNAL_SERVER_ERROR, "COMMON500", "internal_server_error"),
 	
 	UNAUTHORIZED_REQUEST(HttpStatus.UNAUTHORIZED, "AUTH401", "unauthorized_request"),
+	TOKEN_EXPIRED(HttpStatus.UNAUTHORIZED, "AUTH401", "token_expired"),
 	FORBIDDEN_REQUEST(HttpStatus.FORBIDDEN, "AUTH403", "forbidden_request"),
 	EMAIL_ALREADY_EXISTS(HttpStatus.CONFLICT, "AUTH409", "email_already_exists"),
 	NICKNAME_ALREADY_EXISTS(HttpStatus.CONFLICT, "AUTH409", "nickname_already_exists"),

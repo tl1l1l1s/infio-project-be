@@ -14,6 +14,7 @@ import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
 @RestController
+@RequestMapping("/users")
 @AllArgsConstructor
 public class UserController implements UserApiSpecification {
 	
@@ -21,21 +22,21 @@ public class UserController implements UserApiSpecification {
 	private final UserQueryService userQueryService;
 	
 	@Override
-	@PostMapping("/users")
+	@PostMapping
 	public ApiResponse<SignUpResponseDto> registerUser(
 			@RequestBody SignUpRequestDto request) {
 		return ApiResponse.onCreateSuccess(SuccessCode.CREATE_SUCCESS, userCommandService.createUser(request));
 	}
 	
 	@Override
-	@GetMapping("/users")
+	@GetMapping
 	public ApiResponse<UserResponseDto> getUser(
 			@RequestParam Long userId) {
 		return ApiResponse.onSuccess(SuccessCode.SUCCESS, userQueryService.getUser(userId));
 	}
 	
 	@Override
-	@PatchMapping(value = "/users", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+	@PatchMapping(consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
 	public ApiResponse<UserResponseDto> updateUser(
 			@RequestParam Long userId,
 			@RequestPart("payload") @Valid UpdateUserRequestDto request,
@@ -44,7 +45,7 @@ public class UserController implements UserApiSpecification {
 	}
 	
 	@Override
-	@PatchMapping("/users/password")
+	@PatchMapping("/password")
 	public ApiResponse<Void> updatePassword(
 			@RequestParam Long userId,
 			@RequestBody UpdatePasswordRequestDto request) {
@@ -53,24 +54,10 @@ public class UserController implements UserApiSpecification {
 	}
 	
 	@Override
-	@DeleteMapping("/users")
+	@DeleteMapping
 	public ResponseEntity<Void> deleteUser(
 			@RequestParam Long userId) {
 		userCommandService.deleteUser(userId);
-		return ApiResponse.onDeleteSuccess();
-	}
-	
-	@Override
-	@PostMapping("/auth/login")
-	public ApiResponse<LoginResponseDto> login(@RequestBody LoginRequestDto loginRequestDto) {
-		return ApiResponse.onSuccess(SuccessCode.SUCCESS, null);
-	}
-	
-	@Override
-	@PostMapping("/auth/logout")
-	public ResponseEntity<Void> logout(
-			@RequestParam Long userId) {
-		userQueryService.logout(userId);
 		return ApiResponse.onDeleteSuccess();
 	}
 }
