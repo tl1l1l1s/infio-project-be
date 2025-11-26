@@ -40,6 +40,7 @@ public class AuthIntegrationTest {
 	
 	String email;
 	String password;
+	String wrongEmail = "failTest@test.t";
 	
 	@BeforeEach
 	void setUp() {
@@ -54,8 +55,8 @@ public class AuthIntegrationTest {
 	}
 	
 	@Test
-	@DisplayName("로그인 성공 시 쿠키 반환")
-	void shouldReturnCookieIfLoginSuccess() throws Exception {
+	@DisplayName("로그인 성공 시 쿠키 반환, 유저 정보 조회에 접속 가능")
+	void shouldReturnCookieAndSuccessToUsersIfLoginSuccess() throws Exception {
 		
 		MvcResult mvcRes = mockMvc.perform(
 				post("/auth/login")
@@ -77,10 +78,29 @@ public class AuthIntegrationTest {
 			}
 		}
 		
-		System.out.println("fuck!!!!!!!!" + accessTokenValue);
 		mockMvc.perform(
 				get("/users")
 						.cookie(new Cookie("accessToken", accessTokenValue))
 		).andExpect(status().is2xxSuccessful());
+	}
+	
+	@Test
+	@DisplayName("로그인 실패 시 쿠키 미반환")
+	void shouldNotReturnCookieIfLoginFail() throws Exception {
+		
+		mockMvc.perform(
+						post("/auth/login")
+								.contentType(MediaType.APPLICATION_JSON)
+								.content(objectMapper.writeValueAsString(
+										new LoginRequestDto(wrongEmail,  password)
+								))
+				).andExpect(status().is4xxClientError())
+				.andExpect(cookie().doesNotExist("accessToken"))
+				.andExpect(cookie().doesNotExist("refreshToken"))
+				.andReturn();
+		
+		mockMvc.perform(
+				get("/users")
+		).andExpect(status().is4xxClientError());
 	}
 }
