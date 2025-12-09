@@ -24,6 +24,7 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.web.multipart.MultipartFile;
 
 import java.time.LocalDateTime;
 
@@ -52,6 +53,9 @@ public class ArticleServiceTest {
 	
 	@Mock
 	private FileStorageService fileStorageService;
+	
+	@Mock
+	private MultipartFile multipartFile;
 	
 	@InjectMocks
 	private ArticleCommandService articleCommandService;
@@ -127,6 +131,28 @@ public class ArticleServiceTest {
 	}
 	
 	@Test
+	@DisplayName("게시글 작성 시 저장된 파일 경로가 있으면 해당 경로로 이미지가 설정된다.")
+	void givenImageUpload_whenCreateArticle_thenUsesStoredImagePath() {
+		
+		// given
+		String storedPath = "/uploads/articles/stored.png";
+		CreateArticleRequestDto request = new CreateArticleRequestDto(
+				"제목", "내용", null
+		);
+		
+		when(userLoader.getUserById(author.getId())).thenReturn(author);
+		when(fileStorageService.store(multipartFile, "articles")).thenReturn(storedPath);
+		when(articleRepository.save(any(Article.class))).thenAnswer(invocation -> invocation.getArgument(0));
+		
+		// when
+		ArticleResponseDto response = articleCommandService.createArticle(author.getId(), request, multipartFile);
+		
+		// then
+		assertEquals(storedPath, response.articleImage());
+		verify(fileStorageService).store(multipartFile, "articles");
+	}
+	
+	@Test
 	@DisplayName("게시글 작성자 본인의 해당 글을 수정할 수 있다.")
 	void givenAuthor_whenModifyArticle_thenSucceeds() {
 		
@@ -147,6 +173,70 @@ public class ArticleServiceTest {
 		assertEquals(response.articleId(), article.getId());
 		assertEquals(response.title(), article.getTitle());
 		assertEquals(response.content(), article.getContent());
+	}
+	
+	@Test
+	@DisplayName("게시글 수정 시 새 이미지 파일이 오면 기존 이미지를 삭제하고 새 경로로 교체한다.")
+	void givenNewImage_whenUpdateArticle_thenDeletesOldAndSetsNewImage() {
+		
+		// given
+		String oldImage = article.getArticleImage();
+		String storedPath = "/uploads/articles/new.png";
+		UpdateArticleRequestDto request = new UpdateArticleRequestDto(null, null, null);
+		
+		when(userLoader.getUserById(author.getId())).thenReturn(author);
+		when(articleLoader.getArticleById(article.getId())).thenReturn(article);
+		when(articleRepository.save(article)).thenReturn(article);
+		when(multipartFile.isEmpty()).thenReturn(false);
+		when(fileStorageService.store(multipartFile, "articles")).thenReturn(storedPath);
+		
+		// when
+		articleCommandService.updateArticle(author.getId(), article.getId(), request, multipartFile);
+		
+		// then
+		verify(fileStorageService).delete(oldImage);
+		verify(fileStorageService).store(multipartFile, "articles");
+		assertEquals(storedPath, article.getArticleImage());
+	}
+	
+	@Test
+	@DisplayName("게시글 수정 시 이미지 값을 빈 문자열로 보내면 기존 이미지를 삭제하고 null로 설정한다.")
+	void givenBlankImage_whenUpdateArticle_thenDeletesAndClearsImage() {
+		
+		// given
+		String oldImage = article.getArticleImage();
+		UpdateArticleRequestDto request = new UpdateArticleRequestDto(null, null, " ");
+		
+		when(userLoader.getUserById(author.getId())).thenReturn(author);
+		when(articleLoader.getArticleById(article.getId())).thenReturn(article);
+		when(articleRepository.save(article)).thenReturn(article);
+		
+		// when
+		articleCommandService.updateArticle(author.getId(), article.getId(), request, null);
+		
+		// then
+		verify(fileStorageService).delete(oldImage);
+		assertThat(article.getArticleImage()).isNull();
+	}
+	
+	@Test
+	@DisplayName("게시글 수정 시 이미지 경로 값이 오면 해당 값으로 변경한다.")
+	void givenImagePath_whenUpdateArticle_thenSetsProvidedPath() {
+		
+		// given
+		UpdateArticleRequestDto request = new UpdateArticleRequestDto(null, null, "/uploads/articles/custom.png");
+		
+		when(userLoader.getUserById(author.getId())).thenReturn(author);
+		when(articleLoader.getArticleById(article.getId())).thenReturn(article);
+		when(articleRepository.save(article)).thenReturn(article);
+		
+		// when
+		articleCommandService.updateArticle(author.getId(), article.getId(), request, null);
+		
+		// then
+		assertEquals("/uploads/articles/custom.png", article.getArticleImage());
+		verify(fileStorageService, never()).delete(anyString());
+		verify(fileStorageService, never()).store(any(), anyString());
 	}
 	
 	@Test

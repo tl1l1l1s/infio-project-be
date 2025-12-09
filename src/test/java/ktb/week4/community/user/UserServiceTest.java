@@ -8,6 +8,7 @@ import ktb.week4.community.domain.user.repository.UserRepository;
 import ktb.week4.community.domain.user.service.UserCommandService;
 import ktb.week4.community.domain.user.service.UserQueryService;
 import ktb.week4.community.domain.user.validator.UserValidator;
+import ktb.week4.community.global.file.FileStorageService;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -40,6 +41,9 @@ public class UserServiceTest {
 	
 	@Mock
 	MultipartFile multipartFile;
+	
+	@Mock
+	FileStorageService fileStorageService;
 	
 	@InjectMocks
 	UserCommandService userCommandService;
@@ -143,5 +147,44 @@ public class UserServiceTest {
 		assertEquals("newNick", user.getNickname());
 		assertEquals("newImage.png", user.getProfileImage());
 		verify(userRepository).save(user);
+	}
+	
+	@Test
+	@DisplayName("프로필 이미지 파일이 들어오면 기존 이미지 삭제 후 새 경로로 변경한다.")
+	void givenProfileImageFile_whenUpdateUser_thenDeletesOldAndStoresNew() {
+		// given
+		String originalProfile = user.getProfileImage();
+		UpdateUserRequestDto request = new UpdateUserRequestDto(user.getNickname(), null);
+		
+		when(userLoader.getUserById(1L)).thenReturn(user);
+		when(userRepository.save(user)).thenReturn(user);
+		when(multipartFile.isEmpty()).thenReturn(false);
+		when(fileStorageService.store(multipartFile, "profiles")).thenReturn("/uploads/profiles/new.png");
+		
+		// when
+		userCommandService.updateUser(1L, request, multipartFile);
+		
+		// then
+		verify(fileStorageService).delete(originalProfile);
+		verify(fileStorageService).store(multipartFile, "profiles");
+		assertEquals("/uploads/profiles/new.png", user.getProfileImage());
+	}
+	
+	@Test
+	@DisplayName("프로필 이미지를 빈 문자열로 보내면 기존 이미지 삭제 후 기본 이미지로 변경한다.")
+	void givenBlankProfileImage_whenUpdateUser_thenResetsToDefault() {
+		// given
+		String originalProfile = user.getProfileImage();
+		UpdateUserRequestDto request = new UpdateUserRequestDto(user.getNickname(), " ");
+		
+		when(userLoader.getUserById(1L)).thenReturn(user);
+		when(userRepository.save(user)).thenReturn(user);
+		
+		// when
+		userCommandService.updateUser(1L, request, null);
+		
+		// then
+		verify(fileStorageService).delete(originalProfile);
+		assertEquals("", user.getProfileImage());
 	}
 }
